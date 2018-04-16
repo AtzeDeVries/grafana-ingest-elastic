@@ -1,3 +1,4 @@
 filebeat/log-temp/*
+filebeat/log/*
 elasticsearch/data/*
 grafana/*
