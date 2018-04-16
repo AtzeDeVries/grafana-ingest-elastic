@@ -1,0 +1,6 @@
+- module: waarneming
+  # Access logs
+  access:
+    enabled: true
+
+

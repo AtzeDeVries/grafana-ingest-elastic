@@ -1,0 +1,23 @@
+{
+  "description": "Waarneming Access Log with geoip",
+  "processors": [{
+    "geoip": {
+      "field": "remote_addr",
+      "target_field": "geoip"
+    }
+	},
+  {
+    "user_agent": {
+      "field": "http_user_agent",
+      "target_field": "user_agent",
+      "ignore_failure": true
+    }
+  }
+  ],
+  "on_failure" : [{
+    "set" : {
+      "field" : "error.message",
+      "value" : "{{ _ingest.on_failure_message }}"
+    }
+  }]
+}
