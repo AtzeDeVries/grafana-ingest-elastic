@@ -1,14 +1,20 @@
 version: '3'
 services:
-  
+
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.2.2
+    #image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.2.2
+    image: quay.io/pires/docker-elasticsearch:6.2.4
     volumes:
     - ./elasticsearch/data:/usr/share/elasticsearch/data
     environment:
       # so support single node development
       discovery.type: single-node
-      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+      ES_JAVA_OPTS: "-Xms1g -Xmx1g"
+      CLUSTERNAME: "insight"
+      ES_PLUGINS_INSTALL: "ingest-geoip"
+      NODE_MASTER: "true"
+      NODE_DATA: "true"
+      HTTP_ENABLE: "true"
     ulimits:
       memlock:
         soft: -1
@@ -25,7 +31,7 @@ services:
       - ${ELASTICSEARCH_AUTH:-traefik.frontend.auth.basic=kibana:$apr1$.lcgllId$9sUY3fPk/gDuh3NQ55024/}
 
   kibana:
-    image: docker.elastic.co/kibana/kibana-oss:6.2.2
+    image: docker.elastic.co/kibana/kibana-oss:6.2.4
     expose:
       - "5601"
     networks:
@@ -98,12 +104,13 @@ services:
         #      - "insight-elasticsearch.naturalis.nl:127.0.0.1"
     volumes:
       - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml
+      - ./filebeat/fields.yml:/usr/share/filebeat/fields.yml
       - ./filebeat/modules.d:/usr/share/filebeat/modules.d
       - ./filebeat/module:/usr/share/filebeat/module
       - ./filebeat/log:/log
-      - ./filebeat/template:/template
+      - ./filebeat/template:/usr/share/filebeat/template.yml
 
-
+#
 # run docker network create web before
 networks:
   web:

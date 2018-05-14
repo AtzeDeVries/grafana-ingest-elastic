@@ -16,15 +16,17 @@ output.elasticsearch:
     - insight-elasticsearch.naturalis.nl:80
   username: kibana
   password: kibana
-  index: filebeat
+  index: filebeat-%{[beat.version]}-%{+yyyy.MM.dd}
+
   #  pipeline: test_pipe
 
 
 setup.template:
-  name: "testbeat"
-  pattern: "testbeat-%{[beat.version]}-*"
-  overwrite: false
-  fields: "/template/template.yml"
+  name: "filebeat"
+  pattern: "filebeat*"
+  overwrite: true
+  fields: ${path.config}/fields.yml
+  #  fields: "/template/template.yml"
       #setup.kibana:
       #  host: "kibana:5601"
 

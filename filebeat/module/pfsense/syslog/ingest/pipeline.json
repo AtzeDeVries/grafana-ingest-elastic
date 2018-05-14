@@ -1,0 +1,90 @@
+{
+"description": "Pipeline for parsing pfsense syslog messages.",
+  "processors": [
+    {
+      "grok": {
+        "field": "message",
+        "patterns": [
+          "%{SYSLOGTIMESTAMP:syslog_timestamp}: %{WORD:pfsense.syslog_severity} %{SYSLOGHOST:pfsense.hostname} %{SYSLOGPROG:pfsense.syslog_program}:%{SPACE}(%{FILTER_LOG}|%{DHCP_LOG})"
+        ],
+        "ignore_missing": true,
+        "pattern_definitions": {
+          "FILTER_LOG": "%{LOG_DATA},%{IP_SPECIFIC_DATA},%{IP_DATA},%{PROTOCOL_DATA}",
+          "LOG_DATA": "(%{INT:pfsense.filterlog.rule}),(%{INT:pfsense.filterlog.sub_rule}),,(%{INT:pfsense.filterlog.tracker}),(%{WORD:pfsense.filterlog.iface}),(%{WORD:pfsense.filterlog.reason}),(%{WORD:pfsense.filterlog.action}),(%{WORD:pfsense.filterlog.direction}),(%{INT:pfsense.filterlog.ip_ver})",
+          "IP_SPECIFIC_DATA": "(%{IPv4_SPECIFIC_DATA}|%{IPv6_SPECIFIC_DATA})",
+          "IPv4_SPECIFIC_DATA": "(%{BASE16NUM:pfsense.filterlog.tos}),,(%{INT:pfsense.filterlog.ttl}),(%{INT:pfsense.filterlog.id}),(%{INT:pfsense.filterlog.offset}),(%{WORD:pfsense.filterlog.flags}),(%{INT:pfsense.filterlog.proto_id}),(%{WORD:pfsense.filterlog.proto})",
+          "IPv6_SPECIFIC_DATA": "(%{BASE16NUM:pfsense.filterlog.class}),(%{DATA:pfsense.filterlog.flow_label}),(%{INT:pfsense.filterlog.hop_limit}),(%{WORD:pfsense.filterlog.proto}),(%{INT:pfsense.filterlog.proto_id})",
+          "IP_DATA": "(%{INT:pfsense.filterlog.length}),(%{IP:pfsense.filterlog.src_ip}),(%{IP:pfsense.filterlog.dest_ip})",
+          "PROTOCOL_DATA": "(%{TCP_DATA}|%{UDP_DATA}|%{ICMP_DATA}|%{PFSYNC_DATA})",
+          "TCP_DATA": "(%{INT:pfsense.filterlog.src_port}),(%{INT:pfsense.filterlog.dest_port}),(%{INT:pfsense.filterlog.data_length}),(%{WORD:pfsense.filterlog.tcp_flags}),(%{INT:pfsense.filterlog.sequence_number}),,(%{INT:pfsense.filterlog.tcp_window}),,(%{GREEDYDATA:pfsense.filterlog.tcp_options})",
+          "UDP_DATA": "(%{INT:pfsense.filterlog.src_port}),(%{INT:pfsense.filterlog.dest_port}),(%{INT:pfsense.filterlog.data_length})",
+          "ICMP_DATA": "(%{ICMP_TYPE}%{ICMP_RESPONSE})",
+          "PFSYNC_DATA": "(%{WORD:pfsense.filterlog.carp_action}),(%{INT:pfsense.filterlog.carp_data_length}),(%{INT:pfsense.filterlog.carp_vhid_group}),(%{INT:pfsense.filterlog.carp_a}),(%{INT:pfsense.filterlog.carp_advertising_frequency_skew}),(%{INT:pfsense.filterlog.carp_advertising_frequency_base})",
+          "ICMP_TYPE": "(?<pfsense.filterlog.icmp_type>(request|reply|unreachproto|unreachport|unreach|timeexceed|paramprob|redirect|maskreply|needfrag|tstamp|tstampreply))",
+          "ICMP_RESPONSE": "(%{ICMP_ECHO_REQ_REPLY}|%{ICMP_UNREACHPORT}| %{ICMP_UNREACHPROTO}|%{ICMP_UNREACHABLE}|%{ICMP_NEED_FLAG}|%{ICMP_TSTAMP}|%{ICMP_TSTAMP_REPLY})",
+          "ICMP_ECHO_REQ_REPLY": "(%{INT:pfsense.filterlog.icmp_echo_id}),(%{INT:pfsense.filterlog.icmp_echo_sequence})",
+          "ICMP_UNREACHPORT": "(%{IP:pfsense.filterlog.icmp_unreachport_dest_ip}),(%{WORD:pfsense.filterlog.icmp_unreachport_protocol}),(%{INT:pfsense.filterlog.icmp_unreachport_port})",
+          "ICMP_UNREACHPROTO": "(%{IP:pfsense.filterlog.icmp_unreach_dest_ip}),(%{WORD:pfsense.filterlog.icmp_unreachproto_protocol})",
+          "ICMP_UNREACHABLE": "(%{GREEDYDATA:pfsense.filterlog.icmp_unreachable})",
+          "ICMP_NEED_FLAG": "(%{IP:pfsense.filterlog.icmp_need_flag_ip}),(%{INT:pfsense.filterlog.icmp_need_flag_mtu})",
+          "ICMP_TSTAMP": "(%{INT:pfsense.filterlog.icmp_tstamp_id}),(%{INT:pfsense.filterlog.icmp_tstamp_sequence})",
+          "ICMP_TSTAMP_REPLY": "(%{INT:pfsense.filterlog.icmp_tstamp_reply_id}),(%{INT:pfsense.filterlog.icmp_tstamp_reply_sequence}),(%{INT:pfsense.filterlog.icmp_tstamp_reply_otime}),(%{INT:pfsense.filterlog.icmp_tstamp_reply_rtime}),(%{INT:pfsense.filterlog.icmp_tstamp_reply_ttime})",
+          "DHCP_LOG": "(%{DHCPDISCOVER}|%{DHCPOFFER}|%{DHCPREQUEST}|%{DHCPACK}|%{DHCPINFORM}|%{DHCPRELEASE}|%{DHCPDECLINE})",
+          "DHCPDISCOVER": "%{WORD:pfsense.dhcpd.ruledhcp_action} from %{COMMONMAC:pfsense.dhcpd.dhcp_client_mac}%{SPACE}((%{GREEDYDATA:pfsense.dhcpd.dhcp_client_hostname}))? via (?<pfsense.dhcpd.dhcp_client_vlan>[0-9a-z_]*)(: %{GREEDYDATA:pfsense.dhcpd.dhcp_load_balance})?",
+          "DHCPOFFER": "%{WORD:pfsense.dhcpd.dhcp_action} on %{IPV4:pfsense.dhcpd.dhcp_client_ip} to %{COMMONMAC:pfsense.dhcpd.dhcp_client_mac}%{SPACE}((%{GREEDYDATA:pfsense.dhcpd.dhcp_client_hostname}))? via (?<pfsense.dhcpd.dhcp_client_vlan>[0-9a-z_]*)",
+          "DHCPREQUEST": "%{WORD:pfsense.dhcpd.dhcp_action} for %{IPV4:pfsense.dhcpd.dhcp_client_ip}%{SPACE}((%{IPV4:pfsense.dhcpd.dhcp_ip_unknown}))? from %{COMMONMAC:pfsense.dhcpd.dhcp_client_mac}%{SPACE}((%{GREEDYDATA:pfsense.dhcpd.dhcp_client_hostname}))? via (?<pfsense.dhcpd.dhcp_client_vlan>[0-9a-z_]*)(: %{GREEDYDATA:pfsense.dhcpd.dhcp_request_message})?",
+          "DHCPACK": "(%{DHCPACK_TO}|%{DHCPACK_ON})",
+          "DHCPACK_TO": "%{WORD:pfsense.dhcpd.dhcp_action} to %{IPV4:pfsense.dhcpd.dhcp_client_ip} \\(%{COMMONMAC:pfsense.dhcpd.dhcp_client_mac}\\) via (?<pfsense.dhcpd.dhcp_client_vlan>[0-9a-z_]*)",
+          "DHCPACK_ON": "%{WORD:pfsense.dhcpd.dhcp_action} on %{COMMONMAC:pfsense.dhcpd.dhcp_client_mac}%{SPACE}((%{GREEDYDATA:pfsense.dhcpd.dhcp_client_hostname}))? via (?<pfsense.dhcpd.dhcp_client_vlan>[0-9a-z_]*)",
+          "DHCPINFORM": "%{WORD:pfsense.dhcpd.dhcp_action} from %{IPV4:pfsense.dhcpd.dhcp_client_ip} via (?<pfsense.dhcpd.dhcp_client_vlan>[0-9a-z_]*)",
+          "DHCPRELEASE": "%{WORD:pfsense.dhcpd.dhcp_action} of %{IPV4:pfsense.dhcpd.dhcp_client_ip} from %{COMMONMAC:pfsense.dhcpd.dhcp_client_mac}%{SPACE}((%{GREEDYDATA:pfsense.dhcpd.dhcp_client_hostname}))? via (?<pfsense.dhcpd.dhcp_client_vlan>[0-9a-z_]*) %{GREEDYDATA:pfsense.dhcpd.dhcp_release_message}",
+          "DHCPDECLINE": "%{WORD:pfsense.dhcpd.dhcp_action} of %{IPV4:pfsense.dhcpd.dhcp_client_ip} from %{COMMONMAC:pfsense.dhcpd.dhcp_client_mac}%{SPACE}((%{GREEDYDATA:pfsense.dhcpd.dhcp_client_hostname}))? via (?<pfsense.dhcpd.dhcp_client_vlan>[0-9a-z_]*) %{GREEDYDATA:pfsense.dhcpd.dhcp_decline_message}"
+        }
+
+      }
+    },
+    {
+      "date": {
+        "field": "syslog_timestamp",
+        "target_field": "@timestamp",
+        "formats": [
+          "MMM  d HH:mm:ss",
+          "MMM dd HH:mm:ss"
+        ],
+        "ignore_failure": true
+      }
+    },
+		{
+			"lowercase": {
+				"field": "pfsense.filterlog.proto",
+				"ignore_missing" : true
+			}
+		},
+		{
+      "geoip" : {
+        "field" : "pfsense.filterlog.src_ip",
+        "target_field" : "pfsense.filterlog.geo_src",
+				"ignore_missing" : true
+      }
+    },
+				{
+      "geoip" : {
+        "field" : "pfsense.filterlog.dest_ip",
+        "target_field" : "pfsense.filterlog.geo_dest",
+				"ignore_missing" : true
+      }
+    },
+    {
+      "remove": {
+        "field": ["message", "syslog_timestamp","syslog_program"]
+      }
+    }
+
+  ],
+  "on_failure" : [{
+    "set" : {
+      "field" : "error.message",
+      "value" : "{{ _ingest.on_failure_message }}"
+    }
+  }]
+}
